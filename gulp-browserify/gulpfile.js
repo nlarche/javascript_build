@@ -4,6 +4,9 @@ var source = require('vinyl-source-stream');
 var browserify = require('browserify');
 var watchify = require('watchify');
 var browserSync = require('browser-sync').create();
+var url = require('url');
+var proxyMiddleware = require('http-proxy-middleware');
+var sass = require('gulp-sass');
 
 
 function bundle(bundler) {
@@ -18,7 +21,18 @@ function bundle(bundler) {
 
 }
 
+var proxy = proxyMiddleware(['/fonts/**', '/images/**', '/rest/**', '/angular/**/*.html'], {
+    target: 'http://10.10.40.13:8081/cr/',
+    port: 3002,
+    onProxyReq: function onProxyReq(proxyReq, req, res) {
+        // add custom header to request
+        proxyReq.setHeader('CAS-User', '---------');
+    }
+
+});
+
 gulp.task('watch', function () {
+
     var watcher = watchify(browserify('./app.js'));
 
     bundle(watcher);
@@ -28,31 +42,24 @@ gulp.task('watch', function () {
     });
     watcher.on('log', gutil.log);
 
-    browserSync.init({
-        injectChanges: true,
-        files: "./components/**/**",
-        proxy: {
-            target: "http://10.10.40.13:8081/cr/",
-            reqHeaders: function (config) {
-                return {
-                    "CAS-User": '----',
+    gulp.watch('./stylesheets/**/*.scss', ['sass']);
+    gulp.watch("components/**/*.html").on('change', browserSync.reload);
 
-                };
-            }
+    browserSync.init({
+        server: {
+            baseDir: ".",
+            middleware: [proxy]
         },
-        open: false
+        open: true
 
     });
 });
 
 gulp.task('sass', function () {
     gulp.src('./stylesheets/**/*.scss')
-        .pipe(sass().on('error', sass.logError))
-        .pipe(sass({
-            outputStyle: 'compressed'
-        }))
-        .pipe(gp_rename('cr.css'))
-        .pipe(gulp.dest(opt.distFolder));
+        .pipe(sass())
+        .pipe(gulp.dest("./css"))
+        .pipe(browserSync.stream());
 });
 
 

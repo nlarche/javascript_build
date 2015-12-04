@@ -15,7 +15,7 @@ var config = {
 	entry: {
 		// voir fin config
 		vendor: [],
-		'static': path.join(targetDir, 'static/angular/index.js'), //'../../../../../utilitaires/static-content/src/main/webapp/angular/index.js',
+		'static': '../../../../../utilitaires/static-content/src/main/webapp/angular/index.js', // path.join(targetDir, 'static/angular/index.js'), //,
 		app: './app.js'
 	},
 	output: {},
@@ -121,6 +121,7 @@ config.addVendor('file-saver', path.join(bower_dir, 'file-saver.js/FileSaver.js'
 config.addVendor('angular-piwik', path.join(bower_dir, 'angular-piwik/angular-piwik.js'));
 config.addVendor('detectizr', path.join(bower_dir, 'detectizr/dist/detectizr.js'));
 
+
 // Config PROD uniquement
 if (production) {
 	config.output = {
@@ -149,42 +150,77 @@ if (production) {
 		path: __dirname,
 		filename: '[name].js',
 		chunkFilename: 'vendor.js',
-		publicPath: 'https://localhost:3000/'
+		publicPath: 'http://localhost:3000/'
+	};
+
+	var proxyUrl = 'http://10.10.40.13:8081/cr/';	
+
+	config.devServer = {
+		/* Send API requests on localhost to API server get around CORS */
+		proxy: {
+			'/rest/*': {
+				target: proxyUrl,
+				bypass: addCasUser
+			},
+			'./**/*.html': {
+				target: proxyUrl,
+				bypass: addCasUser
+			},
+			'/angular/**/*.html': {
+				target: proxyUrl,
+				bypass: addCasUser
+			},
+			'/**/*.css': {
+				target: proxyUrl,
+				bypass: addCasUser
+			},
+			'/fonts/*': {
+				target: proxyUrl,
+				bypass: addCasUser
+			},
+			'/images/*': {
+				target: proxyUrl,
+				bypass: addCasUser
+			}
+		}
 	};
 }
 
 module.exports = config;
 
-
-
-// // To rewrite stuff like `bundle.js` to `bundle-[hash].js` in files that refer to it, I tried and
-// // didn't like the following plugin: https://github.com/ampedandwired/html-webpack-plugin
-// // for 2 reasons:
-// //    1. because it didn't work with HMR dev mode...
-// //    2. because it's centered around HTML files but I also change other files...
-// // I hope we can soon find something standard instead of the following hand-coding.
-function parseIndexHtml() {
-	this.plugin("done", function (stats) {
-		var replaceInFile = function (filePath, toReplace, replacement) {
-			var replacer = function (match) {
-				console.log('Replacing in %s: %s => %s', filePath, match, replacement);
-				return replacement;
-			};
-			var str = fs.readFileSync(filePath, 'utf8');
-			var out = str.replace(new RegExp(toReplace, 'g'), replacer);
-			fs.writeFileSync(filePath, out);
-		};
-
-		var hash = stats.hash; // Build's hash, found in `stats` since build lifecycle is done.
-
-
-		replaceInFile('index.html', '<script src="https://localhost:3000/app.js"></script>', '');
-		replaceInFile('index.html', '<script src="https://localhost:3000/static.js"></script>', '');
-		replaceInFile('index.html', '<script src="https://localhost:3000/vendor.js"></script>', '');
-
-
-		// replaceInFile('index.html', 'https://localhost:3000/app.js', 'dist/app.' + hash + '.js');
-		// replaceInFile('index.html', 'https://localhost:3000/static.js', 'dist/static.' + hash + '.js');
-		// replaceInFile('index.html', 'https://localhost:3000/vendor.js', 'dist/vendor.' + hash + '.js');
-	});
+function addCasUser(req, res, proxyOptions) {
+	req.headers['CAS-User'] = '----------';
 }
+
+
+// // // To rewrite stuff like `bundle.js` to `bundle-[hash].js` in files that refer to it, I tried and
+// // // didn't like the following plugin: https://github.com/ampedandwired/html-webpack-plugin
+// // // for 2 reasons:
+// // //    1. because it didn't work with HMR dev mode...
+// // //    2. because it's centered around HTML files but I also change other files...
+// // // I hope we can soon find something standard instead of the following hand-coding.
+// function parseIndexHtml() {
+// 	this.plugin("done", function (stats) {
+// 		var replaceInFile = function (filePath, toReplace, replacement) {
+// 			var replacer = function (match) {
+// 				console.log('Replacing in %s: %s => %s', filePath, match, replacement);
+// 				return replacement;
+// 			};
+// 			var str = fs.readFileSync(filePath, 'utf8');
+// 			var out = str.replace(new RegExp(toReplace, 'g'), replacer);
+// 			fs.writeFileSync(filePath, out);
+// 		};
+
+// 		var hash = stats.hash; // Build's hash, found in `stats` since build lifecycle is done.
+
+
+// 		replaceInFile('index.html', '<script src="https://localhost:3000/app.js"></script>', '');
+// 		replaceInFile('index.html', '<script src="https://localhost:3000/static.js"></script>', '');
+// 		replaceInFile('index.html', '<script src="https://localhost:3000/vendor.js"></script>', '');
+
+
+// 		// replaceInFile('index.html', 'https://localhost:3000/app.js', 'dist/app.' + hash + '.js');
+// 		// replaceInFile('index.html', 'https://localhost:3000/static.js', 'dist/static.' + hash + '.js');
+// 		// replaceInFile('index.html', 'https://localhost:3000/vendor.js', 'dist/vendor.' + hash + '.js');
+// 	});
+// }
