@@ -26,7 +26,7 @@
     "webpack-dev-server": "1.12.1"
   },
   "dependencies": {
-    "angular": "1.4.8",
+    "angular": "1.8.0",
     "angular-cookies": "1.4.8",
     "angular-filter": "0.5.8",
     "angular-foundation": "0.8.0",
